@@ -1,0 +1,7 @@
+#! /bin/bash
+
+## start attu
+docker run -d --rm  -p 8000:3000 --name attu26 zilliz/attu:v2.6
+
+## stop attu
+# docker stop attu26

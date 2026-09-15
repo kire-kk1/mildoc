@@ -1,0 +1,8 @@
+#!/bin/bash
+echo "Mildoc KF Starting... "
+
+uv sync
+
+nohup uv run gunicorn --workers 1 --bind 0.0.0.0:8890 wxkf_callback_app:app >> mildoc_wxkf.log 2>&1 &
+
+# uv run gunicorn --workers 1 --bind 0.0.0.0:8890 wxkf_callback_app:app

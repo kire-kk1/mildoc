@@ -1,0 +1,59 @@
+services:
+  etcd:
+    container_name: milvus-minio-etcd
+    image: quay.io/coreos/etcd:v3.5.25
+    environment:
+      - TZ=Asia/Shanghai
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  standalone:
+    container_name: milvus-minio-standalone
+    image: milvusdb/milvus:v2.6.7
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+    - seccomp:unconfined
+    environment:
+      # etcd 配置
+      ETCD_ENDPOINTS: etcd:2379
+
+      # 外部 MinIO 配置
+      MINIO_ADDRESS: 172.31.154.203
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY_ID: qT63tdsO66jqUjEHeXv3
+      MINIO_SECRET_ACCESS_KEY: YRYrBJzOJxD8e4WKlmSl5qqMbzd64ECTDarEQVAg
+      MINIO_USE_SSL: false
+      MINIO_BUCKET_NAME: milvus
+
+      # milvus 账号权限
+      COMMON_SECURITY_AUTHORIZATION_ENABLED: true
+      COMMON_SECURITY_SUPER_USERS: root  # 不要更改root用户名。
+      COMMON_SECURITY_DEFAULT_ROOT_PASSWORD: admin123
+      
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - "etcd"
+
+networks:
+  default:
+    name: milvus
